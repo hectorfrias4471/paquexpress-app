@@ -5,6 +5,7 @@ import 'login_page.dart';
 import 'entrega_page.dart';
 import 'mapa_page.dart';  
 import 'package:geolocator/geolocator.dart';  
+import 'historial_page.dart';  
 
 class PaquetesPage extends StatefulWidget {
   final int idUsuario;
@@ -90,6 +91,22 @@ class PaquetesPageState extends State<PaquetesPage> {
             },
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HistorialPage(
+                idUsuario: widget.idUsuario,
+                nombreCompleto: widget.nombreCompleto,
+              ),
+            ),
+          );
+        },
+        icon: const Icon(Icons.history),
+        label: const Text("Historial"),
+        backgroundColor: Colors.green,
       ),
       body: cargando
           ? const Center(child: CircularProgressIndicator())
