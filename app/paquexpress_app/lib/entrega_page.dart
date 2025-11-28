@@ -25,14 +25,12 @@ class EntregaPage extends StatefulWidget {
 }
 
 class EntregaPageState extends State<EntregaPage> {
-  // Variables de estado
   File? imagenSeleccionada;
   Position? ubicacionGPS;
   bool cargando = false;
   String mensaje = "";
   final ImagePicker _picker = ImagePicker();
 
-  // Función para tomar foto
   Future<void> tomarFoto() async {
     try {
       // Pedir permiso de cámara
@@ -42,7 +40,7 @@ class EntregaPageState extends State<EntregaPage> {
         // Abrir cámara
         final XFile? foto = await _picker.pickImage(
           source: ImageSource.camera,
-          imageQuality: 70, // Comprimir imagen al 70%
+          imageQuality: 70, 
         );
 
         if (foto != null) {
@@ -63,7 +61,6 @@ class EntregaPageState extends State<EntregaPage> {
     }
   }
 
-  // Función alternativa: seleccionar foto de galería
   Future<void> seleccionarFoto() async {
     try {
       final XFile? foto = await _picker.pickImage(
@@ -84,7 +81,6 @@ class EntregaPageState extends State<EntregaPage> {
     }
   }
 
-  // Función para obtener ubicación GPS
   Future<void> obtenerUbicacion() async {
     setState(() {
       cargando = true;
@@ -107,7 +103,6 @@ class EntregaPageState extends State<EntregaPage> {
         return;
       }
 
-      // Obtener posición actual
       Position posicion = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -127,15 +122,12 @@ class EntregaPageState extends State<EntregaPage> {
     }
   }
 
-  // Función para convertir imagen a Base64
   String imagenABase64(File imagen) {
     final bytes = imagen.readAsBytesSync();
     return base64Encode(bytes);
   }
 
-  // Función para registrar la entrega (enviar a la API)
   Future<void> registrarEntrega() async {
-    // Validar que tenga foto y GPS
     if (imagenSeleccionada == null) {
       setState(() {
         mensaje = "❌ Debes tomar una foto primero";
@@ -156,10 +148,8 @@ class EntregaPageState extends State<EntregaPage> {
     });
 
     try {
-      // Convertir imagen a base64
       String fotoBase64 = imagenABase64(imagenSeleccionada!);
 
-      // Enviar a la API
       var url = Uri.parse("http://localhost:8000/entregas/");
       var response = await http.post(
         url,
@@ -178,7 +168,6 @@ class EntregaPageState extends State<EntregaPage> {
       var data = json.decode(decoded);
 
       if (response.statusCode == 200) {
-        // Mostrar diálogo de éxito
         if (!mounted) return;
         showDialog(
           context: context,
@@ -282,7 +271,6 @@ class EntregaPageState extends State<EntregaPage> {
             ),
             const SizedBox(height: 24),
 
-            // Sección de foto
             const Text(
               "1️⃣ Evidencia Fotográfica",
               style: TextStyle(
@@ -292,7 +280,6 @@ class EntregaPageState extends State<EntregaPage> {
             ),
             const SizedBox(height: 12),
             
-            // Mostrar foto o placeholder
             Container(
               height: 250,
               decoration: BoxDecoration(
@@ -359,7 +346,6 @@ class EntregaPageState extends State<EntregaPage> {
             ),
             const SizedBox(height: 32),
 
-            // Sección de GPS
             const Text(
               "2️⃣ Ubicación GPS",
               style: TextStyle(
@@ -369,7 +355,6 @@ class EntregaPageState extends State<EntregaPage> {
             ),
             const SizedBox(height: 12),
 
-            // Mostrar coordenadas o placeholder
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -419,7 +404,6 @@ class EntregaPageState extends State<EntregaPage> {
             ),
             const SizedBox(height: 12),
 
-            // Botón de GPS
             ElevatedButton.icon(
               onPressed: cargando ? null : obtenerUbicacion,
               icon: const Icon(Icons.my_location),
@@ -431,7 +415,6 @@ class EntregaPageState extends State<EntregaPage> {
             ),
             const SizedBox(height: 32),
 
-            // Mensaje de estado
             if (mensaje.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(16),
@@ -457,7 +440,7 @@ class EntregaPageState extends State<EntregaPage> {
               ),
             const SizedBox(height: 16),
 
-            // Botón principal: PAQUETE ENTREGADO
+            // PAQUETE ENTREGADO
             SizedBox(
               height: 60,
               child: ElevatedButton(
