@@ -207,34 +207,6 @@ class LoginPageState extends State<LoginPage> {
                   
                   const SizedBox(height: 30),
                   
-                  // Info de usuarios de prueba
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: const [
-                        Text(
-                          "👤 Usuarios de prueba:",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          "repartidor1 / pass123",
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
-                        Text(
-                          "repartidor2 / pass456",
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
