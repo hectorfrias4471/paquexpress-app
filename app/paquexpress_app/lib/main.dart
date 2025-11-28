@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'login_page.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized(); // Buena práctica, déjalo si lo necesitas para otros plugins.
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

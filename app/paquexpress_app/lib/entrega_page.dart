@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'mapa_page.dart';
 
 class EntregaPage extends StatefulWidget {
   final int idPaquete;
@@ -26,54 +27,29 @@ class EntregaPage extends StatefulWidget {
 
 class EntregaPageState extends State<EntregaPage> {
   // Variables de estado
-  File? imagenSeleccionada;
+  XFile? imagenSeleccionada;  // CAMBIO: Usar XFile en vez de File
+  String? imagenBase64;  // NUEVO: Para almacenar la imagen en base64 directamente
   Position? ubicacionGPS;
   bool cargando = false;
   String mensaje = "";
   final ImagePicker _picker = ImagePicker();
 
-  // Función para tomar foto
-  Future<void> tomarFoto() async {
-    try {
-      // Pedir permiso de cámara
-      var status = await Permission.camera.request();
-      
-      if (status.isGranted) {
-        // Abrir cámara
-        final XFile? foto = await _picker.pickImage(
-          source: ImageSource.camera,
-          imageQuality: 70, // Comprimir imagen al 70%
-        );
-
-        if (foto != null) {
-          setState(() {
-            imagenSeleccionada = File(foto.path);
-            mensaje = "✅ Foto capturada correctamente";
-          });
-        }
-      } else {
-        setState(() {
-          mensaje = "❌ Se necesita permiso de cámara";
-        });
-      }
-    } catch (e) {
-      setState(() {
-        mensaje = "❌ Error al tomar foto: $e";
-      });
-    }
-  }
-
-  // Función alternativa: seleccionar foto de galería
+  // Función para tomar/seleccionar foto (adaptada para web)
   Future<void> seleccionarFoto() async {
     try {
       final XFile? foto = await _picker.pickImage(
-        source: ImageSource.gallery,
+        source: ImageSource.gallery,  // En web solo funciona galería
         imageQuality: 70,
       );
 
       if (foto != null) {
+        // Convertir a base64 directamente
+        final bytes = await foto.readAsBytes();
+        final base64String = base64Encode(bytes);
+        
         setState(() {
-          imagenSeleccionada = File(foto.path);
+          imagenSeleccionada = foto;
+          imagenBase64 = base64String;
           mensaje = "✅ Foto seleccionada correctamente";
         });
       }
@@ -92,22 +68,7 @@ class EntregaPageState extends State<EntregaPage> {
     });
 
     try {
-      // Verificar permisos de ubicación
-      LocationPermission permiso = await Geolocator.checkPermission();
-      
-      if (permiso == LocationPermission.denied) {
-        permiso = await Geolocator.requestPermission();
-      }
-
-      if (permiso == LocationPermission.deniedForever) {
-        setState(() {
-          mensaje = "❌ Los permisos de ubicación están deshabilitados";
-          cargando = false;
-        });
-        return;
-      }
-
-      // Obtener posición actual
+      // En web no necesitamos permisos, directamente obtenemos la ubicación
       Position posicion = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -121,24 +82,19 @@ class EntregaPageState extends State<EntregaPage> {
       });
     } catch (e) {
       setState(() {
-        mensaje = "❌ Error al obtener ubicación: $e";
+        mensaje = "❌ Error al obtener ubicación: $e\n"
+            "💡 Asegúrate de permitir el acceso a tu ubicación en el navegador";
         cargando = false;
       });
     }
   }
 
-  // Función para convertir imagen a Base64
-  String imagenABase64(File imagen) {
-    final bytes = imagen.readAsBytesSync();
-    return base64Encode(bytes);
-  }
-
   // Función para registrar la entrega (enviar a la API)
   Future<void> registrarEntrega() async {
     // Validar que tenga foto y GPS
-    if (imagenSeleccionada == null) {
+    if (imagenBase64 == null) {
       setState(() {
-        mensaje = "❌ Debes tomar una foto primero";
+        mensaje = "❌ Debes seleccionar una foto primero";
       });
       return;
     }
@@ -156,9 +112,6 @@ class EntregaPageState extends State<EntregaPage> {
     });
 
     try {
-      // Convertir imagen a base64
-      String fotoBase64 = imagenABase64(imagenSeleccionada!);
-
       // Enviar a la API
       var url = Uri.parse("http://localhost:8000/entregas/");
       var response = await http.post(
@@ -167,7 +120,7 @@ class EntregaPageState extends State<EntregaPage> {
         body: json.encode({
           "id_paquete": widget.idPaquete,
           "id_usuario": widget.idUsuario,
-          "foto_base64": fotoBase64,
+          "foto_base64": imagenBase64!,
           "latitud": ubicacionGPS!.latitude,
           "longitud": ubicacionGPS!.longitude,
           "direccion_completa": widget.direccion,
@@ -303,8 +256,8 @@ class EntregaPageState extends State<EntregaPage> {
               child: imagenSeleccionada != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.file(
-                        imagenSeleccionada!,
+                      child: Image.memory(
+                        base64Decode(imagenBase64!),
                         fit: BoxFit.cover,
                         width: double.infinity,
                       ),
@@ -314,7 +267,7 @@ class EntregaPageState extends State<EntregaPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.camera_alt,
+                            Icons.add_photo_alternate,
                             size: 60,
                             color: Colors.grey[400],
                           ),
@@ -329,33 +282,14 @@ class EntregaPageState extends State<EntregaPage> {
             ),
             const SizedBox(height: 12),
 
-            // Botones de foto
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: tomarFoto,
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text("Tomar Foto"),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: seleccionarFoto,
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text("Galería"),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: Color(0xFFFF6B35)),
-                      foregroundColor: const Color(0xFFFF6B35),
-                    ),
-                  ),
-                ),
-              ],
+            // Botón para seleccionar foto
+            ElevatedButton.icon(
+              onPressed: seleccionarFoto,
+              icon: const Icon(Icons.photo_library),
+              label: const Text("Seleccionar Foto"),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
             ),
             const SizedBox(height: 32),
 
@@ -429,6 +363,34 @@ class EntregaPageState extends State<EntregaPage> {
                 backgroundColor: Colors.blue,
               ),
             ),
+            
+            // Botón para ver en mapa (solo si ya tiene GPS)
+            if (ubicacionGPS != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MapaPage(
+                          latitud: ubicacionGPS!.latitude,
+                          longitud: ubicacionGPS!.longitude,
+                          direccion: widget.direccion,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.map),
+                  label: const Text("Ver en Mapa"),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: Colors.blue),
+                    foregroundColor: Colors.blue,
+                  ),
+                ),
+              ),
+            
             const SizedBox(height: 32),
 
             // Mensaje de estado
