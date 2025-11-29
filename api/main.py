@@ -109,10 +109,7 @@ def login(data: LoginModel, db=Depends(get_db)):
 
 @app.get("/paquetes/{id_usuario}")
 def listar_paquetes(id_usuario: int, db=Depends(get_db)):
-    """
-    Obtiene todos los paquetes asignados a un repartidor
-    Por defecto muestra solo los pendientes
-    """
+
     paquetes = db.query(Paquete).filter(
         Paquete.id_usuario_asignado == id_usuario,
         Paquete.estatus == 'pendiente'
